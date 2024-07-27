@@ -23,7 +23,7 @@ class CustomDataset(TorchDataset):
 def load_data(data_dir):
     img_paths, text_data = [], []
     total_files = sum(len(files) for _, _, files in os.walk(data_dir))
-    image_extensions = ['.jpeg', '.jpg', '.png', '.bmp', '.gif']
+    image_extensions = ['.jpeg', '.jpg', '.png', '.bmp', '.webp']
 
     with tqdm(total=total_files, desc="Loading data") as pbar:
         for root, _, files in os.walk(data_dir):
