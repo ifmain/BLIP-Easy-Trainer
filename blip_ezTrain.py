@@ -64,7 +64,7 @@ def collate_fn(batch):
         'labels': labels
     }
 
-def main(path_to_model, subgroups_count, data_dir, training_args):
+def main(path_to_model, subgroups_count, data_dir, save_dir, training_args):
     img_paths, text_data = load_data(data_dir)
 
     if len(img_paths) != len(text_data):
@@ -94,14 +94,15 @@ def main(path_to_model, subgroups_count, data_dir, training_args):
         trainer.train()
         torch.cuda.empty_cache()
 
-    model.save_pretrained("blip-image2promt-stable-diffusion-v0.2")
-    processor.save_pretrained("blip-image2promt-stable-diffusion-v0.2")
+    model.save_pretrained(save_dir)
+    processor.save_pretrained(save_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a BLIP model on a custom dataset.")
     parser.add_argument("--path_to_model", type=str, default='Salesforce/blip-image-captioning-base', help="Path to the pretrained BLIP model")
     parser.add_argument("--subgroups_count", type=int, default=4, help="Number of subgroups to split the dataset for training")
     parser.add_argument("--data_dir", type=str, required=True, help="Directory containing the dataset")
+    parser.add_argument("--save_dir", type=str, required=True, help="Directory that will contain the final model file")
 
     # TrainingArguments parameters
     parser.add_argument("--output_dir", type=str, default="./results", help="Directory to save the results")
@@ -132,4 +133,4 @@ if __name__ == "__main__":
         remove_unused_columns=args.remove_unused_columns
     )
 
-    main(args.path_to_model, args.subgroups_count, args.data_dir, training_args)
+    main(args.path_to_model, args.subgroups_count, args.data_dir, args.save_dir, training_args)
