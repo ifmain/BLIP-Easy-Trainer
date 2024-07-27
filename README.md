@@ -41,6 +41,7 @@ project-root/
 - `--data_dir` (str): Directory containing the dataset (required).
 - `--path_to_model` (str): Path to the pretrained BLIP model (default: `Salesforce/blip-image-captioning-base`).
 - `--subgroups_count` (int): Number of subgroups to split the dataset for training (default: `4`).
+- `--save_dir` (str): Directory that will contain the final model file (required).
 - `--output_dir` (str): Directory to save the results (default: `./results`).
 - `--learning_rate` (float): Learning rate for training (default: `2e-5`).
 - `--per_device_train_batch_size` (int): Batch size per device during training (default: `1`).
