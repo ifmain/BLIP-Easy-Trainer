@@ -23,12 +23,13 @@ class CustomDataset(TorchDataset):
 def load_data(data_dir):
     img_paths, text_data = [], []
     total_files = sum(len(files) for _, _, files in os.walk(data_dir))
+    image_extensions = ['.jpeg', '.jpg', '.png', '.bmp', '.gif']
 
     with tqdm(total=total_files, desc="Loading data") as pbar:
         for root, _, files in os.walk(data_dir):
             for file in files:
                 file_path = os.path.join(root, file)
-                if file.endswith('.jpeg'):
+                if any(file.lower().endswith(ext) for ext in image_extensions):
                     img_paths.append(file_path)
                 elif file.endswith('.txt'):
                     with open(file_path, 'r', encoding='utf-8') as f:
