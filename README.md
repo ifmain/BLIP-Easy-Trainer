@@ -13,6 +13,10 @@ A script for training a BLIP (Bootstrapping Language-Image Pre-training) model o
 
 Run the script with the following command:
 
+```sh
+python blip_ezTrain.py --data_dir /path/to/data --path_to_model Salesforce/blip-image-captioning-base --subgroups_count 4 --output_dir ./results --learning_rate 2e-5 --num_train_epochs 5
+```
+
 # Example tree
 
 ```
@@ -30,10 +34,6 @@ project-root/
 │   ├── image4/
 │   │   ├── image4.jpeg
 │   │   ├── image4.txt
-```
-
-```sh
-python blip_ezTrain.py --data_dir /path/to/data --path_to_model Salesforce/blip-image-captioning-base --subgroups_count 4 --output_dir ./results --learning_rate 2e-5 --num_train_epochs 5
 ```
 
 ### Command Line Arguments
