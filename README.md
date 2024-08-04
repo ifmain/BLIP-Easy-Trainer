@@ -1,6 +1,6 @@
 # blip_ezTrain.py
 
-A script for training a BLIP (Bootstrapping Language-Image Pre-training) model on custom datasets with configurable training parameters using command line arguments. This script leverages the HuggingFace Transformers library and PyTorch for efficient processing and training.
+A script for training a BLIP model on custom datasets with configurable training parameters using command line arguments. This script leverages the HuggingFace Transformers library and PyTorch for efficient processing and training.
 
 ## Features
 
