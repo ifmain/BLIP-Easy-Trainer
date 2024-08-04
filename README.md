@@ -7,6 +7,7 @@ A script for training a BLIP (Bootstrapping Language-Image Pre-training) model o
 - Load and preprocess image and text data from a specified directory.
 - Train the BLIP model with configurable training parameters.
 - Split large datasets into smaller subgroups for training on low RAM GPUs.
+- Support for multiple BLIP versions and model precisions.
 - Save the trained model and processor for future use.
 
 ## Usage
@@ -14,7 +15,7 @@ A script for training a BLIP (Bootstrapping Language-Image Pre-training) model o
 Run the script with the following command:
 
 ```sh
-python blip_ezTrain.py --data_dir /path/to/data --path_to_model Salesforce/blip-image-captioning-base --subgroups_count 4 --output_dir ./results --learning_rate 2e-5 --num_train_epochs 5
+python blip_ezTrain.py --data_dir /path/to/data --path_to_model Salesforce/blip-image-captioning-base --subgroups_count 4 --save_dir ./results --learning_rate 2e-5 --num_train_epochs 5 --blip_version 1
 ```
 
 # Example tree
@@ -40,6 +41,7 @@ project-root/
 
 - `--data_dir` (str): Directory containing the dataset (required).
 - `--path_to_model` (str): Path to the pretrained BLIP model (default: `Salesforce/blip-image-captioning-base`).
+- `--load_in` (str): Set model precision (`full`, `f16`, `i8`) (default: `f16`).
 - `--subgroups_count` (int): Number of subgroups to split the dataset for training (default: `4`).
 - `--save_dir` (str): Directory that will contain the final model file (required).
 - `--output_dir` (str): Directory to save the results (default: `./results`).
@@ -51,8 +53,9 @@ project-root/
 - `--logging_dir` (str): Directory for logging (default: `./logs`).
 - `--logging_steps` (int): Logging steps (default: `10`).
 - `--save_total_limit` (int): Limit the total amount of checkpoints (default: `2`).
-- `--save_steps` (int): Save checkpoint every X updates steps (default: `500`).
+- `--save_steps` (int): Save checkpoint every X updates steps (default: `5000`).
 - `--remove_unused_columns` (bool): Remove unused columns (default: `False`).
+- `--blip_version` (str): BLIP version to use (`1` or `2`) (required).
 
 ## Contributing
 
