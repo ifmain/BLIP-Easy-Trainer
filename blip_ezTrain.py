@@ -1,7 +1,7 @@
 import os
 import argparse
 from PIL import Image
-from transformers import BlipProcessor, BlipForConditionalGeneration, TrainingArguments, Trainer
+from transformers import BlipProcessor, BlipForConditionalGeneration, Blip2Processor, Blip2ForConditionalGeneration, TrainingArguments, Trainer
 from datasets import Dataset, load_metric
 import torch
 from torch.utils.data import DataLoader, Dataset as TorchDataset
@@ -10,15 +10,16 @@ import numpy as np
 import gc
 
 class CustomDataset(TorchDataset):
-    def __init__(self, dataset, processor):
+    def __init__(self, dataset, processor,load_in):
         self.dataset = dataset
         self.processor = processor
+        self.load_in = load_in
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        return preprocess_data(self.dataset[idx], self.processor)
+        return preprocess_data(self.dataset[idx], self.processor, self.load_in)
 
 def load_data(data_dir):
     img_paths, text_data = [], []
@@ -37,10 +38,13 @@ def load_data(data_dir):
                 pbar.update(1)
     return img_paths, text_data
 
-def preprocess_data(example, processor):
+def preprocess_data(example, processor,load_in):
     try:
         image = Image.open(example['image']).convert("RGB")
-        inputs = processor(images=image, text=example['text'], return_tensors="pt", padding=True, truncation=True, max_length=512)
+        if load_in=='full':
+            inputs = processor(images=image, text=example['text'], return_tensors="pt", padding=True, truncation=True, max_length=512)#.to("cuda")
+        else:
+            inputs = processor(images=image, text=example['text'], return_tensors="pt", padding=True, truncation=True, max_length=512).to(torch.float16)#.to("cuda", torch.float16)
         inputs.update({'labels': inputs.input_ids.clone()})
         return inputs
     except Exception as e:
@@ -64,7 +68,7 @@ def collate_fn(batch):
         'labels': labels
     }
 
-def main(path_to_model, subgroups_count, data_dir, save_dir, training_args):
+def main(path_to_model, load_in, subgroups_count, data_dir, save_dir, training_args, blip_version):
     img_paths, text_data = load_data(data_dir)
 
     if len(img_paths) != len(text_data):
@@ -74,14 +78,38 @@ def main(path_to_model, subgroups_count, data_dir, save_dir, training_args):
     del img_paths, text_data  # Free your RAM
     gc.collect()
 
-    processor = BlipProcessor.from_pretrained(path_to_model)
+    if int(blip_version)==1:
+        bpp = BlipProcessor
+        bfcg = BlipForConditionalGeneration
+    elif int(blip_version)==2:
+        bpp = Blip2Processor
+        bfcg = Blip2ForConditionalGeneration
+    else:
+        print('Wrong version')
+    
+
+    if load_in=='full':
+        processor = bpp.from_pretrained(path_to_model)
+        model = bfcg.from_pretrained(path_to_model).to("cuda")
+    elif "f16":
+        processor = bpp.from_pretrained(path_to_model)
+        model = bfcg.from_pretrained(path_to_model, torch_dtype=torch.float16).to("cuda")
+    elif "i8":
+        processor = bpp.from_pretrained(path_to_model)
+        model = bfcg.from_pretrained(path_to_model, load_in_8bit=True).to("cuda")
+    else:
+        print('Wrong precision | need: (full / f16 / i8)')
+        exit()
+
+    
+    
+
     train_subgroups = np.array_split(dataset, subgroups_count)  # Optimization for low RAM GPU
-    model = BlipForConditionalGeneration.from_pretrained(path_to_model).to("cuda")
 
     for i, subgroup in enumerate(train_subgroups):
         print(f"Training on subgroup {i + 1}/{len(train_subgroups)}")
 
-        dataset = CustomDataset(subgroup, processor)
+        dataset = CustomDataset(subgroup, processor,load_in)
         train_loader = DataLoader(dataset, batch_size=1, collate_fn=collate_fn)
 
         trainer = Trainer(
@@ -100,9 +128,11 @@ def main(path_to_model, subgroups_count, data_dir, save_dir, training_args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a BLIP model on a custom dataset.")
     parser.add_argument("--path_to_model", type=str, default='Salesforce/blip-image-captioning-base', help="Path to the pretrained BLIP model")
+    parser.add_argument("--load_in", type=str, default='f16', help="Set model precision (full / f16 / i8)")
     parser.add_argument("--subgroups_count", type=int, default=4, help="Number of subgroups to split the dataset for training")
     parser.add_argument("--data_dir", type=str, required=True, help="Directory containing the dataset")
     parser.add_argument("--save_dir", type=str, required=True, help="Directory that will contain the final model file")
+    parser.add_argument("--blip_version", type=str, required=True, help="Set blip version 1 or 2")
 
     # TrainingArguments parameters
     parser.add_argument("--output_dir", type=str, default="./results", help="Directory to save the results")
@@ -114,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--logging_dir", type=str, default='./logs', help="Directory for logging")
     parser.add_argument("--logging_steps", type=int, default=10, help="Logging steps")
     parser.add_argument("--save_total_limit", type=int, default=2, help="Limit the total amount of checkpoints")
-    parser.add_argument("--save_steps", type=int, default=500, help="Save checkpoint every X updates steps")
+    parser.add_argument("--save_steps", type=int, default=5000, help="Save checkpoint every X updates steps")
     parser.add_argument("--remove_unused_columns", type=bool, default=False, help="Remove unused columns")
 
     args = parser.parse_args()
@@ -133,4 +163,4 @@ if __name__ == "__main__":
         remove_unused_columns=args.remove_unused_columns
     )
 
-    main(args.path_to_model, args.subgroups_count, args.data_dir, args.save_dir, training_args)
+    main(args.path_to_model, args.load_in, args.subgroups_count, args.data_dir, args.save_dir, training_args, args.blip_version)
